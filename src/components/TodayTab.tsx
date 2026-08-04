@@ -11,6 +11,7 @@ interface TodayTabProps {
   habits: Habit[];
   logs: HabitLog[];
   selectedDateStr: string;
+  isLoading?: boolean;
   onUpdateLog: (log: HabitLog) => void;
   onOpenAddModal: () => void;
   onEditHabit?: (habit: Habit) => void;
@@ -21,6 +22,7 @@ export const TodayTab: React.FC<TodayTabProps> = ({
   habits,
   logs,
   selectedDateStr,
+  isLoading = false,
   onUpdateLog,
   onOpenAddModal,
   onEditHabit,
@@ -92,6 +94,36 @@ export const TodayTab: React.FC<TodayTabProps> = ({
     const isDoneB = logB?.completed ? 1 : 0;
     return isDoneA - isDoneB;
   });
+
+  if (isLoading) {
+    return (
+      <div className="px-4 py-2 max-w-2xl mx-auto w-full pb-24 md:pb-8 space-y-2.5 animate-pulse">
+        <div className="bg-white rounded-xl p-3 border border-slate-200/80 h-16 bg-slate-100/70" />
+        <div className="space-y-2">
+          <div className="bg-white rounded-xl p-3 h-14 border border-slate-200/80 bg-slate-100/70 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-6 h-6 bg-slate-200 rounded-lg"></div>
+              <div className="w-8 h-8 bg-slate-200 rounded-lg"></div>
+              <div className="space-y-1">
+                <div className="w-28 h-3.5 bg-slate-200 rounded"></div>
+                <div className="w-16 h-2.5 bg-slate-200 rounded"></div>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-xl p-3 h-14 border border-slate-200/80 bg-slate-100/70 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-6 h-6 bg-slate-200 rounded-lg"></div>
+              <div className="w-8 h-8 bg-slate-200 rounded-lg"></div>
+              <div className="space-y-1">
+                <div className="w-36 h-3.5 bg-slate-200 rounded"></div>
+                <div className="w-20 h-2.5 bg-slate-200 rounded"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="px-4 py-2 max-w-2xl mx-auto w-full pb-24 md:pb-8 space-y-2.5">

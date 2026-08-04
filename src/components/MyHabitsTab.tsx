@@ -6,6 +6,7 @@ import { Plus, Edit3, Trash2, Pause, Play, ChevronRight, Check } from 'lucide-re
 
 interface MyHabitsTabProps {
   habits: Habit[];
+  isLoading?: boolean;
   onOpenAddModal: () => void;
   onEditHabit: (habit: Habit) => void;
   onDeleteHabit: (habitId: string) => void;
@@ -14,6 +15,7 @@ interface MyHabitsTabProps {
 
 export const MyHabitsTab: React.FC<MyHabitsTabProps> = ({
   habits,
+  isLoading = false,
   onOpenAddModal,
   onEditHabit,
   onDeleteHabit,
@@ -68,7 +70,12 @@ export const MyHabitsTab: React.FC<MyHabitsTabProps> = ({
 
       {/* Habit List */}
       <div className="space-y-2">
-        {filteredHabits.length === 0 ? (
+        {isLoading ? (
+          <div className="space-y-2 animate-pulse">
+            <div className="bg-white rounded-2xl p-4 border border-slate-200/80 h-16 bg-slate-100/70" />
+            <div className="bg-white rounded-2xl p-4 border border-slate-200/80 h-16 bg-slate-100/70" />
+          </div>
+        ) : filteredHabits.length === 0 ? (
           <div className="text-center py-12 bg-white rounded-2xl border border-dashed border-slate-200">
             <p className="text-slate-500 font-semibold text-sm">Tidak ada habit ditemukan</p>
           </div>

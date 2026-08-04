@@ -6,6 +6,8 @@ import { getTodayStr } from './lib/dateUtils';
 import {
   subscribeHabits,
   subscribeLogs,
+  subscribeUserProfile,
+  saveUserProfileToDb,
   saveHabitToDb,
   deleteHabitFromDb,
   updateHabitLogToDb,
@@ -38,6 +40,7 @@ export default function App() {
 
   const [habits, setHabits] = useState<Habit[]>([]);
   const [logs, setLogs] = useState<HabitLog[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [habitToEdit, setHabitToEdit] = useState<Habit | null>(null);
@@ -54,6 +57,7 @@ export default function App() {
   const handleSaveUserName = (newName: string) => {
     setStoredUserName(newName);
     setUserName(newName);
+    saveUserProfileToDb(syncCode, newName);
   };
 
   const handleSaveSyncCode = (newCode: string) => {
@@ -63,19 +67,32 @@ export default function App() {
 
   // Real-time Firestore or Local Storage subscriptions using active Sync Code
   useEffect(() => {
+    setIsLoading(true);
     const activeUserId = syncCode;
 
     const unsubHabits = subscribeHabits(activeUserId, (data) => {
       setHabits(data);
+      setIsLoading(false);
     });
 
     const unsubLogs = subscribeLogs(activeUserId, (data) => {
       setLogs(data);
     });
 
+    const unsubProfile = subscribeUserProfile(activeUserId, (remoteName) => {
+      setStoredUserName(remoteName);
+      setUserName(remoteName);
+    });
+
+    // Ensure current local name is synced if remote doc doesn't override it
+    if (userName) {
+      saveUserProfileToDb(activeUserId, userName);
+    }
+
     return () => {
       unsubHabits();
       unsubLogs();
+      unsubProfile();
     };
   }, [syncCode]);
 
@@ -154,6 +171,7 @@ export default function App() {
               habits={habits}
               logs={logs}
               selectedDateStr={selectedDateStr}
+              isLoading={isLoading}
               onUpdateLog={handleUpdateLog}
               onOpenAddModal={() => {
                 setHabitToEdit(null);
@@ -173,6 +191,7 @@ export default function App() {
         {activeTab === 'my_habits' && (
           <MyHabitsTab
             habits={habits}
+            isLoading={isLoading}
             onOpenAddModal={() => {
               setHabitToEdit(null);
               setIsFormModalOpen(true);
