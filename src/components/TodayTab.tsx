@@ -3,7 +3,7 @@ import { Habit, HabitLog } from '../types';
 import { HabitIcon } from './HabitIcon';
 import { getColorTheme } from '../lib/colors';
 import { HabitValueModal } from './HabitValueModal';
-import { getHabitStreak, getTodayStr } from '../lib/dateUtils';
+import { getHabitStreak, getTodayStr, formatDisplayDateLabel } from '../lib/dateUtils';
 import confetti from 'canvas-confetti';
 import { Check, Flame, Plus, Trash2, Edit3, MoreVertical } from 'lucide-react';
 
@@ -131,7 +131,7 @@ export const TodayTab: React.FC<TodayTabProps> = ({
       <div className="bg-white rounded-xl p-2.5 md:p-3 shadow-2xs border border-slate-200/80">
         <div className="flex items-center justify-between mb-1.5">
           <div>
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Progress Hari Ini</span>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Progress {formatDisplayDateLabel(selectedDateStr)}</span>
             <div className="flex items-baseline gap-1 mt-0.2">
               <span className="text-base font-bold text-slate-900">{completedCount}/{totalCount}</span>
               <span className="text-[11px] font-semibold text-slate-500">selesai</span>

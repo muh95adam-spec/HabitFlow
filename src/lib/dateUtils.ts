@@ -62,6 +62,15 @@ export function formatShortMonthDate(dateStr: string): string {
   return `${d} ${INDO_MONTHS[date.getMonth()].slice(0, 3)}`;
 }
 
+export function formatDisplayDateLabel(dateStr: string): string {
+  if (dateStr === getTodayStr()) {
+    return 'Hari Ini';
+  }
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const monthName = INDO_MONTHS[m - 1];
+  return `${d} ${monthName} ${y}`;
+}
+
 // Streak calculation logic
 export function getHabitStreak(habitId: string, logs: HabitLog[]): { currentStreak: number; bestStreak: number } {
   const habitLogs = logs

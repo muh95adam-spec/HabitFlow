@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { getDaysWindow, getTodayStr, formatShortMonthDate } from '../lib/dateUtils';
+import { getDaysWindow, getTodayStr, formatDisplayDateLabel } from '../lib/dateUtils';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react';
 
 interface DateSelectorProps {
@@ -27,31 +27,15 @@ export const DateSelector: React.FC<DateSelectorProps> = ({ selectedDateStr, onS
     setAnchorDateStr(newAnchor);
   };
 
-  const handleResetToToday = () => {
-    const today = getTodayStr();
-    setAnchorDateStr(today);
-    onSelectDate(today);
-  };
-
-  const isSelectedToday = selectedDateStr === getTodayStr();
-
   return (
     <div className="px-4 py-1.5 max-w-2xl mx-auto w-full">
-      {/* Date Navigation & Today reset */}
+      {/* Date Navigation */}
       <div className="flex items-center justify-between mb-1">
         <div className="flex items-center gap-1.5">
           <CalendarIcon className="w-3.5 h-3.5 text-teal-600" />
-          <span className="text-xs font-bold text-slate-700">
-            {formatShortMonthDate(selectedDateStr)}
+          <span className="text-xs font-extrabold text-slate-800">
+            {formatDisplayDateLabel(selectedDateStr)}
           </span>
-          {!isSelectedToday && (
-            <button
-              onClick={handleResetToToday}
-              className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-teal-50 text-teal-700 hover:bg-teal-100 transition-colors border border-teal-200"
-            >
-              Hari Ini
-            </button>
-          )}
         </div>
 
         <div className="flex items-center gap-1">

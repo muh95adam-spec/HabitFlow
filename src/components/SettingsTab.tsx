@@ -14,7 +14,8 @@ import {
   Check,
   RefreshCw,
   Share2,
-  Laptop
+  Laptop,
+  Trash2
 } from 'lucide-react';
 
 interface SettingsTabProps {
@@ -309,6 +310,23 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
             <span className="text-xs font-bold text-slate-700">Impor JSON</span>
             <input type="file" accept=".json" onChange={handleImportJSON} className="hidden" />
           </label>
+        </div>
+
+        <div className="pt-2 border-t border-slate-100">
+          <button
+            onClick={() => {
+              if (window.confirm('Apakah Anda yakin ingin menghapus cache lokal & mereset tampilan?')) {
+                localStorage.removeItem('habitflow_local_habits');
+                localStorage.removeItem('habitflow_local_logs');
+                window.location.reload();
+              }
+            }}
+            type="button"
+            className="w-full py-2 px-3 bg-rose-50 hover:bg-rose-100 text-rose-700 rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-1.5"
+          >
+            <Trash2 className="w-4 h-4 text-rose-600" />
+            <span>Bersihkan Cache & Reset Data Lokal</span>
+          </button>
         </div>
       </div>
 

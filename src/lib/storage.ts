@@ -88,30 +88,11 @@ export function subscribeHabits(userId: string, callback: (habits: Habit[]) => v
   const q = query(collection(db, 'habits'), where('userId', '==', userId));
   return onSnapshot(
     q,
-    async (snapshot) => {
+    (snapshot) => {
       if (snapshot.empty) {
-        // If local storage has user-created habits, save them for this sync code.
-        // Otherwise, start clean with empty habits array [].
-        const local = getLocalHabits();
-        if (local.length > 0) {
-          const batch = writeBatch(db);
-          const now = new Date().toISOString();
-          const habitsToSave = local.map((h) => ({
-            ...h,
-            userId,
-            updatedAt: now,
-          }));
-          habitsToSave.forEach((habit) => {
-            const docRef = doc(db, 'habits', habit.id);
-            batch.set(docRef, habit, { merge: true });
-          });
-          await batch.commit();
-          saveLocalHabits(habitsToSave);
-          callback(habitsToSave);
-        } else {
-          saveLocalHabits([]);
-          callback([]);
-        }
+        // Clean empty state for new or unsynced code
+        saveLocalHabits([]);
+        callback([]);
       } else {
         const habits: Habit[] = snapshot.docs.map((d) => d.data() as Habit);
         saveLocalHabits(habits);
@@ -125,7 +106,6 @@ export function subscribeHabits(userId: string, callback: (habits: Habit[]) => v
   );
 }
 
-
 // Subscribe to logs real-time
 export function subscribeLogs(userId: string, callback: (logs: HabitLog[]) => void) {
   if (!userId || userId === 'guest') {
@@ -137,9 +117,14 @@ export function subscribeLogs(userId: string, callback: (logs: HabitLog[]) => vo
   return onSnapshot(
     q,
     (snapshot) => {
-      const logs: HabitLog[] = snapshot.docs.map((d) => d.data() as HabitLog);
-      saveLocalLogs(logs);
-      callback(logs);
+      if (snapshot.empty) {
+        saveLocalLogs([]);
+        callback([]);
+      } else {
+        const logs: HabitLog[] = snapshot.docs.map((d) => d.data() as HabitLog);
+        saveLocalLogs(logs);
+        callback(logs);
+      }
     },
     (error) => {
       console.warn('Firestore logs subscription error, fallback to local', error);
