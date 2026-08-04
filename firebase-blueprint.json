@@ -1,0 +1,39 @@
+{
+  "entities": {
+    "habits": {
+      "title": "Habit",
+      "description": "User habits and goals",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "type": { "type": "string", "enum": ["checklist", "number", "duration", "max"] },
+        "targetValue": { "type": "number" },
+        "unit": { "type": "string" },
+        "icon": { "type": "string" },
+        "color": { "type": "string" },
+        "status": { "type": "string", "enum": ["active", "paused"] },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" },
+        "currentStreak": { "type": "number" },
+        "bestStreak": { "type": "number" }
+      },
+      "required": ["userId", "name", "type", "targetValue", "status"]
+    },
+    "habit_logs": {
+      "title": "Habit Log",
+      "description": "Daily log entry for habits",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "habitId": { "type": "string" },
+        "date": { "type": "string" },
+        "completed": { "type": "boolean" },
+        "currentValue": { "type": "number" },
+        "targetValue": { "type": "number" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["userId", "habitId", "date", "completed"]
+    }
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "name": "HabitFlow",
+  "description": "Aplikasi habit tracker personal mobile-first yang simpel, cepat, dan modern.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
