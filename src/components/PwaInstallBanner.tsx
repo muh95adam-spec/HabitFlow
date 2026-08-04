@@ -1,15 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { Download, Smartphone, X, Share, PlusSquare, Check } from 'lucide-react';
+import { Download, Smartphone, X, ExternalLink, Share, PlusSquare, Monitor, CheckCircle2 } from 'lucide-react';
 
 export const PwaInstallBanner: React.FC = () => {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isStandalone, setIsStandalone] = useState(false);
   const [isDismissed, setIsDismissed] = useState(false);
+  const [isIframe, setIsIframe] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
-  const [showIOSGuide, setShowIOSGuide] = useState(false);
+  const [showGuideModal, setShowGuideModal] = useState(false);
 
   useEffect(() => {
-    // Check if already in standalone (PWA) mode
+    // Check if in iframe
+    const checkIframe = window.self !== window.top;
+    setIsIframe(checkIframe);
+
+    // Check standalone mode
     const checkStandalone =
       window.matchMedia('(display-mode: standalone)').matches ||
       (window.navigator as any).standalone === true;
@@ -45,12 +50,18 @@ export const PwaInstallBanner: React.FC = () => {
         setDeferredPrompt(null);
         setIsStandalone(true);
       }
+    } else if (isIframe) {
+      // Open in new tab so browser can trigger native install prompt or address bar icon
+      window.open(window.location.href, '_blank');
     } else if (isIOS) {
-      setShowIOSGuide(true);
+      setShowGuideModal(true);
     } else {
-      // General prompt if deferred prompt hasn't fired yet
-      alert('Untuk menginstal HabitFlow:\n1. Buka menu browser (⋮ atau ⚙)\n2. Pilih "Instal Aplikasi" atau "Tambahkan ke Layar Utama"');
+      setShowGuideModal(true);
     }
+  };
+
+  const handleOpenNewTab = () => {
+    window.open(window.location.href, '_blank');
   };
 
   const handleDismiss = () => {
@@ -64,83 +75,149 @@ export const PwaInstallBanner: React.FC = () => {
 
   return (
     <>
-      {/* Floating Install Banner at bottom for mobile / top for desktop */}
-      <div className="fixed bottom-16 md:bottom-6 left-3 right-3 md:left-auto md:right-6 md:max-w-md bg-slate-900/95 text-white p-3.5 rounded-2xl shadow-2xl backdrop-blur-md border border-slate-700/80 z-40 animate-in slide-in-from-bottom-5 duration-300 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="w-10 h-10 rounded-xl bg-teal-500 text-white flex items-center justify-center shrink-0 font-bold shadow-xs">
-            <Smartphone className="w-5 h-5" />
+      {/* Floating Bottom Install Banner */}
+      <div className="fixed bottom-16 md:bottom-6 left-3 right-3 md:left-auto md:right-6 md:max-w-lg bg-slate-900 text-white p-4 rounded-2xl shadow-2xl border border-teal-500/30 z-50 animate-in slide-in-from-bottom-5 duration-300">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-teal-500 to-emerald-600 text-white flex items-center justify-center shrink-0 font-extrabold shadow-md">
+              <Smartphone className="w-6 h-6" />
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <h4 className="text-xs font-extrabold text-white truncate">
+                  Instal HabitFlow App
+                </h4>
+                <span className="bg-teal-500/20 text-teal-300 text-[10px] px-2 py-0.5 rounded-full border border-teal-500/30 font-bold uppercase tracking-wider shrink-0">
+                  PWA Ready
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-300 mt-0.5 leading-snug">
+                {isIframe
+                  ? 'Buka di tab baru untuk langsung menginstal ke HP/PC Anda'
+                  : 'Gunakan offline & akses cepat langsung dari Layar Utama'}
+              </p>
+            </div>
           </div>
-          <div className="min-w-0">
-            <h4 className="text-xs font-bold text-white truncate flex items-center gap-1.5">
-              <span>Instal HabitFlow App</span>
-              <span className="bg-teal-500/30 text-teal-300 text-[10px] px-1.5 py-0.5 rounded-md border border-teal-500/30 font-semibold">
-                PWA
-              </span>
-            </h4>
-            <p className="text-[11px] text-slate-300 truncate">
-              Akses cepat & offline di Layar Utama HP/PC Anda
-            </p>
-          </div>
-        </div>
 
-        <div className="flex items-center gap-2 shrink-0">
-          <button
-            onClick={handleInstallClick}
-            className="px-3 py-1.5 bg-teal-500 hover:bg-teal-400 active:scale-95 text-slate-950 font-bold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1.5"
-          >
-            <Download className="w-3.5 h-3.5" />
-            <span>Instal</span>
-          </button>
           <button
             onClick={handleDismiss}
             aria-label="Tutup Banner"
-            className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-white rounded-lg hover:bg-slate-800 transition-colors"
+            className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors shrink-0"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
+
+        <div className="mt-3 pt-3 border-t border-slate-800 flex items-center justify-end gap-2">
+          {isIframe ? (
+            <>
+              <button
+                onClick={() => setShowGuideModal(true)}
+                className="px-3 py-1.5 text-slate-300 hover:text-white text-xs font-semibold rounded-xl hover:bg-slate-800 transition-colors"
+              >
+                Panduan
+              </button>
+              <button
+                onClick={handleOpenNewTab}
+                className="px-4 py-2 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 active:scale-95 text-slate-950 font-extrabold text-xs rounded-xl shadow-md transition-all flex items-center gap-1.5"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                <span>Buka Tab Baru & Instal</span>
+              </button>
+            </>
+          ) : (
+            <button
+              onClick={handleInstallClick}
+              className="w-full py-2 bg-gradient-to-r from-teal-500 to-emerald-500 hover:from-teal-400 hover:to-emerald-400 active:scale-95 text-slate-950 font-extrabold text-xs rounded-xl shadow-md transition-all flex items-center justify-center gap-2"
+            >
+              <Download className="w-4 h-4" />
+              <span>{deferredPrompt ? 'Instal Sekarang' : 'Petunjuk Instalasi'}</span>
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* iOS Installation Guide Modal */}
-      {showIOSGuide && (
-        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl p-5 max-w-sm w-full shadow-2xl text-slate-800 space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
-              <h3 className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
-                <Smartphone className="w-4 h-4 text-teal-600" />
-                <span>Instal di iPhone / iPad</span>
-              </h3>
+      {/* Installation Guide Modal */}
+      {showGuideModal && (
+        <div className="fixed inset-0 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl p-5 max-w-md w-full shadow-2xl text-slate-800 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-teal-100 text-teal-700 flex items-center justify-center font-bold">
+                  <Smartphone className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-extrabold text-slate-900">
+                    Cara Instal HabitFlow (PWA)
+                  </h3>
+                  <p className="text-[11px] text-slate-500">
+                    Tanpa perlu mendownload di Play Store / App Store
+                  </p>
+                </div>
+              </div>
               <button
-                onClick={() => setShowIOSGuide(false)}
+                onClick={() => setShowGuideModal(false)}
                 className="text-slate-400 hover:text-slate-600 font-bold text-sm w-7 h-7 flex items-center justify-center rounded-lg hover:bg-slate-100"
               >
                 ✕
               </button>
             </div>
 
-            <div className="space-y-3 text-xs text-slate-600">
-              <p className="leading-relaxed">
-                Untuk memasang <strong>HabitFlow</strong> di iPhone/iPad tanpa App Store:
-              </p>
-              <div className="flex items-start gap-2.5 p-2.5 bg-slate-50 rounded-xl border border-slate-100">
-                <div className="w-5 h-5 rounded-md bg-teal-100 text-teal-700 flex items-center justify-center font-bold text-[11px] shrink-0 mt-0.5">
-                  1
+            {isIframe && (
+              <div className="p-3 bg-teal-50 border border-teal-200 rounded-xl space-y-2">
+                <div className="flex items-start gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-teal-600 shrink-0 mt-0.5" />
+                  <p className="text-xs text-teal-900 leading-relaxed">
+                    <strong>Langkah Utama:</strong> Aplikasi ini sedang dibuka di dalam <i>preview frame</i>. Untuk memunculkan tombol instal resmi dari browser, buka di tab baru terlebih dahulu.
+                  </p>
                 </div>
-                <p className="text-xs">Tekan tombol <strong>Bagikan (Share <Share className="w-3.5 h-3.5 inline text-teal-600" />)</strong> di Safari.</p>
+                <button
+                  onClick={handleOpenNewTab}
+                  className="w-full py-2 bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs rounded-lg transition-colors flex items-center justify-center gap-1.5 shadow-xs"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  <span>Buka HabitFlow di Tab Baru</span>
+                </button>
               </div>
-              <div className="flex items-start gap-2.5 p-2.5 bg-slate-50 rounded-xl border border-slate-100">
-                <div className="w-5 h-5 rounded-md bg-teal-100 text-teal-700 flex items-center justify-center font-bold text-[11px] shrink-0 mt-0.5">
-                  2
-                </div>
-                <p className="text-xs">Pilih <strong>"Tambahkan ke Layar Utama"</strong> (<PlusSquare className="w-3.5 h-3.5 inline text-teal-600" />).</p>
+            )}
+
+            <div className="space-y-3 text-xs text-slate-600">
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 space-y-2">
+                <h4 className="font-bold text-slate-800 flex items-center gap-1.5 text-xs">
+                  <Smartphone className="w-3.5 h-3.5 text-teal-600" />
+                  Android (Chrome / Edge / Brave)
+                </h4>
+                <p className="text-[11px]">
+                  Buka menu titik tiga (<strong>⋮</strong>) di sudut kanan atas browser &rarr; Pilih <strong>"Instal Aplikasi"</strong> atau <strong>"Tambahkan ke Layar Utama"</strong>.
+                </p>
+              </div>
+
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 space-y-2">
+                <h4 className="font-bold text-slate-800 flex items-center gap-1.5 text-xs">
+                  <Share className="w-3.5 h-3.5 text-teal-600" />
+                  iPhone / iPad (Safari)
+                </h4>
+                <p className="text-[11px]">
+                  Tekan tombol <strong>Bagikan (Share)</strong> di bagian bawah Safari &rarr; Gulir ke bawah dan pilih <strong>"Tambahkan ke Layar Utama"</strong>.
+                </p>
+              </div>
+
+              <div className="p-3 bg-slate-50 rounded-xl border border-slate-100 space-y-2">
+                <h4 className="font-bold text-slate-800 flex items-center gap-1.5 text-xs">
+                  <Monitor className="w-3.5 h-3.5 text-teal-600" />
+                  Komputer / Laptop (Chrome / Edge)
+                </h4>
+                <p className="text-[11px]">
+                  Klik ikon <strong>Instal (<Download className="w-3 h-3 inline text-teal-600" />)</strong> di ujung kanan bilah alamat URL browser Anda.
+                </p>
               </div>
             </div>
 
             <button
-              onClick={() => setShowIOSGuide(false)}
-              className="w-full py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold transition-colors shadow-xs"
+              onClick={() => setShowGuideModal(false)}
+              className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-colors"
             >
-              Mengerti & Selesai
+              Tutup
             </button>
           </div>
         </div>
