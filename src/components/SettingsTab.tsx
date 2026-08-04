@@ -39,7 +39,8 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isStandalone, setIsStandalone] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
-  const [showIOSModal, setShowIOSModal] = useState(false);
+  const [showInstallModal, setShowInstallModal] = useState(false);
+  const [activeInstallTab, setActiveInstallTab] = useState<'android' | 'desktop' | 'ios'>('android');
 
   useEffect(() => {
     // Check if running as PWA
@@ -47,10 +48,15 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
       (window.navigator as any).standalone === true;
     setIsStandalone(checkStandalone);
 
-    // Detect iOS
+    // Detect platform
     const ua = window.navigator.userAgent;
     const iosDevice = /iPad|iPhone|iPod/.test(ua) && !(window as any).MSStream;
+    const isDesktop = !/Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+    
     setIsIOS(iosDevice);
+    if (iosDevice) setActiveInstallTab('ios');
+    else if (isDesktop) setActiveInstallTab('desktop');
+    else setActiveInstallTab('android');
 
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
@@ -71,10 +77,8 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
         setDeferredPrompt(null);
         setIsStandalone(true);
       }
-    } else if (isIOS) {
-      setShowIOSModal(true);
     } else {
-      alert('Untuk menginstal di Desktop/Android: Buka menu titik tiga di browser Anda (⋮ atau ⚙), lalu pilih "Instal HabitFlow" atau "Tambahkan ke Layar Utama".');
+      setShowInstallModal(true);
     }
   };
 
@@ -306,44 +310,125 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
         </div>
       </div>
 
-      {/* Modal Petunjuk Instalasi iOS */}
-      {showIOSModal && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl p-5 max-w-sm w-full shadow-xl space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-              <h3 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
-                <Smartphone className="w-5 h-5 text-teal-600" />
-                <span>Instal di iOS (iPhone/iPad)</span>
+      {/* Modal Petunjuk Instalasi PWA */}
+      {showInstallModal && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl p-5 max-w-sm w-full shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+              <h3 className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
+                <Smartphone className="w-4 h-4 text-teal-600" />
+                <span>Cara Instal HabitFlow</span>
               </h3>
               <button
-                onClick={() => setShowIOSModal(false)}
-                className="text-slate-400 hover:text-slate-600 font-bold text-sm"
+                onClick={() => setShowInstallModal(false)}
+                className="text-slate-400 hover:text-slate-600 font-bold text-sm w-7 h-7 flex items-center justify-center rounded-lg hover:bg-slate-100"
               >
                 ✕
               </button>
             </div>
-            <div className="space-y-3 text-xs text-slate-600">
-              <p className="leading-relaxed">
-                Untuk menginstal <strong>HabitFlow</strong> di iPhone atau iPad Anda:
-              </p>
-              <div className="flex items-start gap-2.5 p-2.5 bg-slate-50 rounded-xl border border-slate-100">
-                <div className="w-6 h-6 rounded-lg bg-teal-100 text-teal-700 flex items-center justify-center font-bold text-xs shrink-0">
-                  1
-                </div>
-                <p>Tekan tombol <strong>Bagikan (Share <Share className="w-3.5 h-3.5 inline text-teal-600" />)</strong> di bagian bawah Safari.</p>
-              </div>
-              <div className="flex items-start gap-2.5 p-2.5 bg-slate-50 rounded-xl border border-slate-100">
-                <div className="w-6 h-6 rounded-lg bg-teal-100 text-teal-700 flex items-center justify-center font-bold text-xs shrink-0">
-                  2
-                </div>
-                <p>Gulir ke bawah dan pilih <strong>"Tambahkan ke Layar Utama"</strong> (Add to Home Screen <PlusSquare className="w-3.5 h-3.5 inline text-teal-600" />).</p>
-              </div>
+
+            {/* Platform Selector Tabs */}
+            <div className="flex bg-slate-100 p-1 rounded-xl gap-1">
+              <button
+                onClick={() => setActiveInstallTab('android')}
+                className={`flex-1 py-1.5 text-[11px] font-bold rounded-lg transition-all ${
+                  activeInstallTab === 'android'
+                    ? 'bg-white text-teal-700 shadow-2xs'
+                    : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                Android
+              </button>
+              <button
+                onClick={() => setActiveInstallTab('desktop')}
+                className={`flex-1 py-1.5 text-[11px] font-bold rounded-lg transition-all ${
+                  activeInstallTab === 'desktop'
+                    ? 'bg-white text-teal-700 shadow-2xs'
+                    : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                Desktop
+              </button>
+              <button
+                onClick={() => setActiveInstallTab('ios')}
+                className={`flex-1 py-1.5 text-[11px] font-bold rounded-lg transition-all ${
+                  activeInstallTab === 'ios'
+                    ? 'bg-white text-teal-700 shadow-2xs'
+                    : 'text-slate-500 hover:text-slate-700'
+                }`}
+              >
+                iOS (iPhone)
+              </button>
             </div>
+
+            {/* Tab Contents */}
+            <div className="space-y-3 text-xs text-slate-600 min-h-[140px]">
+              {activeInstallTab === 'android' && (
+                <div className="space-y-2.5 animate-in fade-in duration-150">
+                  <p className="leading-relaxed text-[11px] font-medium text-slate-500">
+                    Langkah instal di HP Android (Chrome/Edge/Brave):
+                  </p>
+                  <div className="flex items-start gap-2.5 p-2.5 bg-slate-50 rounded-xl border border-slate-100">
+                    <div className="w-5 h-5 rounded-md bg-teal-100 text-teal-700 flex items-center justify-center font-bold text-[11px] shrink-0 mt-0.5">
+                      1
+                    </div>
+                    <p className="text-xs">Tekan <strong>Menu Titik Tiga (⋮)</strong> di sudut kanan atas browser.</p>
+                  </div>
+                  <div className="flex items-start gap-2.5 p-2.5 bg-slate-50 rounded-xl border border-slate-100">
+                    <div className="w-5 h-5 rounded-md bg-teal-100 text-teal-700 flex items-center justify-center font-bold text-[11px] shrink-0 mt-0.5">
+                      2
+                    </div>
+                    <p className="text-xs">Pilih <strong>"Instal Aplikasi"</strong> atau <strong>"Tambahkan ke Layar Utama"</strong>.</p>
+                  </div>
+                </div>
+              )}
+
+              {activeInstallTab === 'desktop' && (
+                <div className="space-y-2.5 animate-in fade-in duration-150">
+                  <p className="leading-relaxed text-[11px] font-medium text-slate-500">
+                    Langkah instal di Komputer / Desktop (Chrome/Edge):
+                  </p>
+                  <div className="flex items-start gap-2.5 p-2.5 bg-slate-50 rounded-xl border border-slate-100">
+                    <div className="w-5 h-5 rounded-md bg-teal-100 text-teal-700 flex items-center justify-center font-bold text-[11px] shrink-0 mt-0.5">
+                      1
+                    </div>
+                    <p className="text-xs">Klik ikon <strong>Instal (<Monitor className="w-3.5 h-3.5 inline text-teal-600" />)</strong> di bilah alamat URL kanan atas.</p>
+                  </div>
+                  <div className="flex items-start gap-2.5 p-2.5 bg-slate-50 rounded-xl border border-slate-100">
+                    <div className="w-5 h-5 rounded-md bg-teal-100 text-teal-700 flex items-center justify-center font-bold text-[11px] shrink-0 mt-0.5">
+                      2
+                    </div>
+                    <p className="text-xs">Atau buka Menu Chrome (⋮) &rarr; <strong>Simpan dan Bagikan</strong> &rarr; <strong>Instal HabitFlow</strong>.</p>
+                  </div>
+                </div>
+              )}
+
+              {activeInstallTab === 'ios' && (
+                <div className="space-y-2.5 animate-in fade-in duration-150">
+                  <p className="leading-relaxed text-[11px] font-medium text-slate-500">
+                    Langkah instal di iPhone / iPad (Safari):
+                  </p>
+                  <div className="flex items-start gap-2.5 p-2.5 bg-slate-50 rounded-xl border border-slate-100">
+                    <div className="w-5 h-5 rounded-md bg-teal-100 text-teal-700 flex items-center justify-center font-bold text-[11px] shrink-0 mt-0.5">
+                      1
+                    </div>
+                    <p className="text-xs">Tekan tombol <strong>Bagikan (Share <Share className="w-3.5 h-3.5 inline text-teal-600" />)</strong> di bagian bawah Safari.</p>
+                  </div>
+                  <div className="flex items-start gap-2.5 p-2.5 bg-slate-50 rounded-xl border border-slate-100">
+                    <div className="w-5 h-5 rounded-md bg-teal-100 text-teal-700 flex items-center justify-center font-bold text-[11px] shrink-0 mt-0.5">
+                      2
+                    </div>
+                    <p className="text-xs">Gulir ke bawah dan pilih <strong>"Tambahkan ke Layar Utama"</strong> (<PlusSquare className="w-3.5 h-3.5 inline text-teal-600" />).</p>
+                  </div>
+                </div>
+              )}
+            </div>
+
             <button
-              onClick={() => setShowIOSModal(false)}
-              className="w-full py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold transition-colors"
+              onClick={() => setShowInstallModal(false)}
+              className="w-full py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold transition-colors shadow-xs"
             >
-              Mengerti
+              Mengerti & Selesai
             </button>
           </div>
         </div>
