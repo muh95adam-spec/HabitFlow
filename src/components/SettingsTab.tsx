@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { User } from 'firebase/auth';
 import { Habit, HabitLog } from '../types';
 import { signInWithGoogle, logoutUser } from '../lib/authService';
@@ -15,7 +15,10 @@ import {
   CheckCircle2,
   CloudCheck,
   ShieldCheck,
-  RefreshCw
+  RefreshCw,
+  Share,
+  PlusSquare,
+  Monitor
 } from 'lucide-react';
 
 interface SettingsTabProps {
@@ -33,7 +36,47 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
 }) => {
   const [reminderEnabled, setReminderEnabled] = useState(true);
   const [reminderTime, setReminderTime] = useState('20:00');
-  const [installedPWA, setInstalledPWA] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isStandalone, setIsStandalone] = useState(false);
+  const [isIOS, setIsIOS] = useState(false);
+  const [showIOSModal, setShowIOSModal] = useState(false);
+
+  useEffect(() => {
+    // Check if running as PWA
+    const checkStandalone = window.matchMedia('(display-mode: standalone)').matches ||
+      (window.navigator as any).standalone === true;
+    setIsStandalone(checkStandalone);
+
+    // Detect iOS
+    const ua = window.navigator.userAgent;
+    const iosDevice = /iPad|iPhone|iPod/.test(ua) && !(window as any).MSStream;
+    setIsIOS(iosDevice);
+
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    };
+  }, []);
+
+  const handleInstallPWA = async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        setDeferredPrompt(null);
+        setIsStandalone(true);
+      }
+    } else if (isIOS) {
+      setShowIOSModal(true);
+    } else {
+      alert('Untuk menginstal di Desktop/Android: Buka menu titik tiga di browser Anda (⋮ atau ⚙), lalu pilih "Instal HabitFlow" atau "Tambahkan ke Layar Utama".');
+    }
+  };
 
   const handleExportJSON = () => {
     const data = {
@@ -189,6 +232,36 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
         </div>
       </div>
 
+      {/* PWA Install Section */}
+      <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs space-y-3">
+        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Aplikasi PWA (Web App)</h3>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-teal-50 text-teal-700 flex items-center justify-center">
+              <Smartphone className="w-4 h-4" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-slate-800">Instal di Perangkat</p>
+              <p className="text-[11px] text-slate-400">Android, Desktop & iOS (Tanpa App Store)</p>
+            </div>
+          </div>
+          {isStandalone ? (
+            <span className="flex items-center gap-1 text-xs font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-xl">
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              <span>Terinstal</span>
+            </span>
+          ) : (
+            <button
+              onClick={handleInstallPWA}
+              className="px-3.5 py-1.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold shadow-2xs transition-colors flex items-center gap-1.5"
+            >
+              <Download className="w-3.5 h-3.5" />
+              <span>Instal App</span>
+            </button>
+          )}
+        </div>
+      </div>
+
       {/* Backup & Export Data */}
       <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs space-y-3">
         <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Backup & Ekspor Data</h3>
@@ -228,10 +301,53 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
           </p>
           <p className="flex items-center gap-1.5">
             <Smartphone className="w-4 h-4 text-teal-600 shrink-0" />
-            <span>PWA Installable di Android / iOS</span>
+            <span>PWA Installable di Android, Desktop, & iOS</span>
           </p>
         </div>
       </div>
+
+      {/* Modal Petunjuk Instalasi iOS */}
+      {showIOSModal && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl p-5 max-w-sm w-full shadow-xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+              <h3 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
+                <Smartphone className="w-5 h-5 text-teal-600" />
+                <span>Instal di iOS (iPhone/iPad)</span>
+              </h3>
+              <button
+                onClick={() => setShowIOSModal(false)}
+                className="text-slate-400 hover:text-slate-600 font-bold text-sm"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="space-y-3 text-xs text-slate-600">
+              <p className="leading-relaxed">
+                Untuk menginstal <strong>HabitFlow</strong> di iPhone atau iPad Anda:
+              </p>
+              <div className="flex items-start gap-2.5 p-2.5 bg-slate-50 rounded-xl border border-slate-100">
+                <div className="w-6 h-6 rounded-lg bg-teal-100 text-teal-700 flex items-center justify-center font-bold text-xs shrink-0">
+                  1
+                </div>
+                <p>Tekan tombol <strong>Bagikan (Share <Share className="w-3.5 h-3.5 inline text-teal-600" />)</strong> di bagian bawah Safari.</p>
+              </div>
+              <div className="flex items-start gap-2.5 p-2.5 bg-slate-50 rounded-xl border border-slate-100">
+                <div className="w-6 h-6 rounded-lg bg-teal-100 text-teal-700 flex items-center justify-center font-bold text-xs shrink-0">
+                  2
+                </div>
+                <p>Gulir ke bawah dan pilih <strong>"Tambahkan ke Layar Utama"</strong> (Add to Home Screen <PlusSquare className="w-3.5 h-3.5 inline text-teal-600" />).</p>
+              </div>
+            </div>
+            <button
+              onClick={() => setShowIOSModal(false)}
+              className="w-full py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold transition-colors"
+            >
+              Mengerti
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
