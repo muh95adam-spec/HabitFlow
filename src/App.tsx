@@ -21,7 +21,6 @@ import { StatsTab } from './components/StatsTab';
 import { MyHabitsTab } from './components/MyHabitsTab';
 import { SettingsTab } from './components/SettingsTab';
 import { HabitFormModal } from './components/HabitFormModal';
-import { PwaInstallBanner } from './components/PwaInstallBanner';
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -189,9 +188,6 @@ export default function App() {
           onSave={handleSaveHabit}
         />
       )}
-
-      {/* Floating PWA Install Banner */}
-      <PwaInstallBanner />
     </div>
   );
 }

@@ -1,18 +1,9 @@
-const CACHE_NAME = 'habitflow-v2';
-const ASSETS = [
-  '/',
-  '/index.html',
-  '/manifest.json',
-  '/icon-192.png',
-  '/icon-512.png',
-  '/icon.svg'
-];
+const CACHE_NAME = 'habitflow-v1';
+const ASSETS = ['/', '/index.html', '/manifest.json'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS).catch((err) => console.log('Cache addAll error:', err));
-    })
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
   );
   self.skipWaiting();
 });
@@ -28,34 +19,18 @@ self.addEventListener('activate', (e) => {
 
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
-
-  const url = new URL(e.request.url);
-
-  // Bypass external APIs (Firebase, Google Auth, fonts external CDN) so SW never interferes
-  if (
-    url.origin !== location.origin ||
-    url.pathname.includes('identitytoolkit') ||
-    url.pathname.includes('firestore') ||
-    url.hostname.includes('googleapis.com') ||
-    url.hostname.includes('google.com')
-  ) {
-    return;
-  }
-
+  // Network first, fallback to cache
   e.respondWith(
-    caches.match(e.request).then((cachedResponse) => {
-      const fetchPromise = fetch(e.request)
-        .then((networkResponse) => {
-          if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
-            const responseToCache = networkResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => cache.put(e.request, responseToCache));
+    fetch(e.request)
+      .then((res) => {
+        const copy = res.clone();
+        caches.open(CACHE_NAME).then((cache) => {
+          if (e.request.url.startsWith('http')) {
+            cache.put(e.request, copy);
           }
-          return networkResponse;
-        })
-        .catch(() => cachedResponse || caches.match('/'));
-
-      return cachedResponse || fetchPromise;
-    })
+        });
+        return res;
+      })
+      .catch(() => caches.match(e.request).then((res) => res || caches.match('/')))
   );
 });
-

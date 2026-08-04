@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { User } from 'firebase/auth';
 import { Habit, HabitLog } from '../types';
 import { signInWithGoogle, logoutUser } from '../lib/authService';
@@ -15,10 +15,7 @@ import {
   CheckCircle2,
   CloudCheck,
   ShieldCheck,
-  RefreshCw,
-  Share,
-  PlusSquare,
-  Monitor
+  RefreshCw
 } from 'lucide-react';
 
 interface SettingsTabProps {
@@ -36,51 +33,7 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
 }) => {
   const [reminderEnabled, setReminderEnabled] = useState(true);
   const [reminderTime, setReminderTime] = useState('20:00');
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
-  const [isStandalone, setIsStandalone] = useState(false);
-  const [isIOS, setIsIOS] = useState(false);
-  const [showInstallModal, setShowInstallModal] = useState(false);
-  const [activeInstallTab, setActiveInstallTab] = useState<'android' | 'desktop' | 'ios'>('android');
-
-  useEffect(() => {
-    // Check if running as PWA
-    const checkStandalone = window.matchMedia('(display-mode: standalone)').matches ||
-      (window.navigator as any).standalone === true;
-    setIsStandalone(checkStandalone);
-
-    // Detect platform
-    const ua = window.navigator.userAgent;
-    const iosDevice = /iPad|iPhone|iPod/.test(ua) && !(window as any).MSStream;
-    const isDesktop = !/Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
-    
-    setIsIOS(iosDevice);
-    if (iosDevice) setActiveInstallTab('ios');
-    else if (isDesktop) setActiveInstallTab('desktop');
-    else setActiveInstallTab('android');
-
-    const handleBeforeInstallPrompt = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-    };
-
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    };
-  }, []);
-
-  const handleInstallPWA = async () => {
-    if (deferredPrompt) {
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === 'accepted') {
-        setDeferredPrompt(null);
-        setIsStandalone(true);
-      }
-    } else {
-      setShowInstallModal(true);
-    }
-  };
+  const [installedPWA, setInstalledPWA] = useState(false);
 
   const handleExportJSON = () => {
     const data = {
@@ -236,36 +189,6 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
         </div>
       </div>
 
-      {/* PWA Install Section */}
-      <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs space-y-3">
-        <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Aplikasi PWA (Web App)</h3>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-teal-50 text-teal-700 flex items-center justify-center">
-              <Smartphone className="w-4 h-4" />
-            </div>
-            <div>
-              <p className="text-xs font-bold text-slate-800">Instal di Perangkat</p>
-              <p className="text-[11px] text-slate-400">Android, Desktop & iOS (Tanpa App Store)</p>
-            </div>
-          </div>
-          {isStandalone ? (
-            <span className="flex items-center gap-1 text-xs font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-xl">
-              <CheckCircle2 className="w-3.5 h-3.5" />
-              <span>Terinstal</span>
-            </span>
-          ) : (
-            <button
-              onClick={handleInstallPWA}
-              className="px-3.5 py-1.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold shadow-2xs transition-colors flex items-center gap-1.5"
-            >
-              <Download className="w-3.5 h-3.5" />
-              <span>Instal App</span>
-            </button>
-          )}
-        </div>
-      </div>
-
       {/* Backup & Export Data */}
       <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs space-y-3">
         <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Backup & Ekspor Data</h3>
@@ -305,134 +228,10 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
           </p>
           <p className="flex items-center gap-1.5">
             <Smartphone className="w-4 h-4 text-teal-600 shrink-0" />
-            <span>PWA Installable di Android, Desktop, & iOS</span>
+            <span>PWA Installable di Android / iOS</span>
           </p>
         </div>
       </div>
-
-      {/* Modal Petunjuk Instalasi PWA */}
-      {showInstallModal && (
-        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl p-5 max-w-sm w-full shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
-              <h3 className="text-sm font-extrabold text-slate-900 flex items-center gap-2">
-                <Smartphone className="w-4 h-4 text-teal-600" />
-                <span>Cara Instal HabitFlow</span>
-              </h3>
-              <button
-                onClick={() => setShowInstallModal(false)}
-                className="text-slate-400 hover:text-slate-600 font-bold text-sm w-7 h-7 flex items-center justify-center rounded-lg hover:bg-slate-100"
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* Platform Selector Tabs */}
-            <div className="flex bg-slate-100 p-1 rounded-xl gap-1">
-              <button
-                onClick={() => setActiveInstallTab('android')}
-                className={`flex-1 py-1.5 text-[11px] font-bold rounded-lg transition-all ${
-                  activeInstallTab === 'android'
-                    ? 'bg-white text-teal-700 shadow-2xs'
-                    : 'text-slate-500 hover:text-slate-700'
-                }`}
-              >
-                Android
-              </button>
-              <button
-                onClick={() => setActiveInstallTab('desktop')}
-                className={`flex-1 py-1.5 text-[11px] font-bold rounded-lg transition-all ${
-                  activeInstallTab === 'desktop'
-                    ? 'bg-white text-teal-700 shadow-2xs'
-                    : 'text-slate-500 hover:text-slate-700'
-                }`}
-              >
-                Desktop
-              </button>
-              <button
-                onClick={() => setActiveInstallTab('ios')}
-                className={`flex-1 py-1.5 text-[11px] font-bold rounded-lg transition-all ${
-                  activeInstallTab === 'ios'
-                    ? 'bg-white text-teal-700 shadow-2xs'
-                    : 'text-slate-500 hover:text-slate-700'
-                }`}
-              >
-                iOS (iPhone)
-              </button>
-            </div>
-
-            {/* Tab Contents */}
-            <div className="space-y-3 text-xs text-slate-600 min-h-[140px]">
-              {activeInstallTab === 'android' && (
-                <div className="space-y-2.5 animate-in fade-in duration-150">
-                  <p className="leading-relaxed text-[11px] font-medium text-slate-500">
-                    Langkah instal di HP Android (Chrome/Edge/Brave):
-                  </p>
-                  <div className="flex items-start gap-2.5 p-2.5 bg-slate-50 rounded-xl border border-slate-100">
-                    <div className="w-5 h-5 rounded-md bg-teal-100 text-teal-700 flex items-center justify-center font-bold text-[11px] shrink-0 mt-0.5">
-                      1
-                    </div>
-                    <p className="text-xs">Tekan <strong>Menu Titik Tiga (⋮)</strong> di sudut kanan atas browser.</p>
-                  </div>
-                  <div className="flex items-start gap-2.5 p-2.5 bg-slate-50 rounded-xl border border-slate-100">
-                    <div className="w-5 h-5 rounded-md bg-teal-100 text-teal-700 flex items-center justify-center font-bold text-[11px] shrink-0 mt-0.5">
-                      2
-                    </div>
-                    <p className="text-xs">Pilih <strong>"Instal Aplikasi"</strong> atau <strong>"Tambahkan ke Layar Utama"</strong>.</p>
-                  </div>
-                </div>
-              )}
-
-              {activeInstallTab === 'desktop' && (
-                <div className="space-y-2.5 animate-in fade-in duration-150">
-                  <p className="leading-relaxed text-[11px] font-medium text-slate-500">
-                    Langkah instal di Komputer / Desktop (Chrome/Edge):
-                  </p>
-                  <div className="flex items-start gap-2.5 p-2.5 bg-slate-50 rounded-xl border border-slate-100">
-                    <div className="w-5 h-5 rounded-md bg-teal-100 text-teal-700 flex items-center justify-center font-bold text-[11px] shrink-0 mt-0.5">
-                      1
-                    </div>
-                    <p className="text-xs">Klik ikon <strong>Instal (<Monitor className="w-3.5 h-3.5 inline text-teal-600" />)</strong> di bilah alamat URL kanan atas.</p>
-                  </div>
-                  <div className="flex items-start gap-2.5 p-2.5 bg-slate-50 rounded-xl border border-slate-100">
-                    <div className="w-5 h-5 rounded-md bg-teal-100 text-teal-700 flex items-center justify-center font-bold text-[11px] shrink-0 mt-0.5">
-                      2
-                    </div>
-                    <p className="text-xs">Atau buka Menu Chrome (⋮) &rarr; <strong>Simpan dan Bagikan</strong> &rarr; <strong>Instal HabitFlow</strong>.</p>
-                  </div>
-                </div>
-              )}
-
-              {activeInstallTab === 'ios' && (
-                <div className="space-y-2.5 animate-in fade-in duration-150">
-                  <p className="leading-relaxed text-[11px] font-medium text-slate-500">
-                    Langkah instal di iPhone / iPad (Safari):
-                  </p>
-                  <div className="flex items-start gap-2.5 p-2.5 bg-slate-50 rounded-xl border border-slate-100">
-                    <div className="w-5 h-5 rounded-md bg-teal-100 text-teal-700 flex items-center justify-center font-bold text-[11px] shrink-0 mt-0.5">
-                      1
-                    </div>
-                    <p className="text-xs">Tekan tombol <strong>Bagikan (Share <Share className="w-3.5 h-3.5 inline text-teal-600" />)</strong> di bagian bawah Safari.</p>
-                  </div>
-                  <div className="flex items-start gap-2.5 p-2.5 bg-slate-50 rounded-xl border border-slate-100">
-                    <div className="w-5 h-5 rounded-md bg-teal-100 text-teal-700 flex items-center justify-center font-bold text-[11px] shrink-0 mt-0.5">
-                      2
-                    </div>
-                    <p className="text-xs">Gulir ke bawah dan pilih <strong>"Tambahkan ke Layar Utama"</strong> (<PlusSquare className="w-3.5 h-3.5 inline text-teal-600" />).</p>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <button
-              onClick={() => setShowInstallModal(false)}
-              className="w-full py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold transition-colors shadow-xs"
-            >
-              Mengerti & Selesai
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
