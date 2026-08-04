@@ -5,7 +5,7 @@ import { getColorTheme } from '../lib/colors';
 import { HabitValueModal } from './HabitValueModal';
 import { getHabitStreak, getTodayStr, formatDisplayDateLabel } from '../lib/dateUtils';
 import confetti from 'canvas-confetti';
-import { Check, Flame, Plus, Trash2, Edit3, MoreVertical } from 'lucide-react';
+import { Check, Flame, Plus } from 'lucide-react';
 
 interface TodayTabProps {
   habits: Habit[];
@@ -14,8 +14,6 @@ interface TodayTabProps {
   isLoading?: boolean;
   onUpdateLog: (log: HabitLog) => void;
   onOpenAddModal: () => void;
-  onEditHabit?: (habit: Habit) => void;
-  onDeleteHabit?: (habitId: string) => void;
 }
 
 export const TodayTab: React.FC<TodayTabProps> = ({
@@ -25,15 +23,11 @@ export const TodayTab: React.FC<TodayTabProps> = ({
   isLoading = false,
   onUpdateLog,
   onOpenAddModal,
-  onEditHabit,
-  onDeleteHabit,
 }) => {
   const [activeValueModalHabit, setActiveValueModalHabit] = useState<{
     habit: Habit;
     log: HabitLog | null;
   } | null>(null);
-
-  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const activeHabits = habits.filter((h) => h.status === 'active');
   const isSelectedToday = selectedDateStr === getTodayStr();
@@ -249,73 +243,12 @@ export const TodayTab: React.FC<TodayTabProps> = ({
                       <span>{streak.currentStreak}</span>
                     </div>
                   )}
-
-                  {/* Edit / Delete actions */}
-                  <div className="flex items-center ml-1 border-l border-slate-100 pl-1">
-                    {onEditHabit && (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onEditHabit(habit);
-                        }}
-                        className="p-1 rounded-lg text-slate-300 hover:text-teal-600 hover:bg-teal-50 transition-colors"
-                        title="Edit Habit"
-                      >
-                        <Edit3 className="w-3.5 h-3.5" />
-                      </button>
-                    )}
-                    {onDeleteHabit && (
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setConfirmDeleteId(habit.id);
-                        }}
-                        className="p-1 rounded-lg text-slate-300 hover:text-rose-600 hover:bg-rose-50 transition-colors"
-                        title="Hapus Habit"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    )}
-                  </div>
                 </div>
               </div>
             );
           })
         )}
       </div>
-
-      {/* Confirmation Modal for Delete */}
-      {confirmDeleteId && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl p-5 max-w-sm w-full shadow-xl space-y-4">
-            <h3 className="text-base font-extrabold text-slate-900">Hapus Habit?</h3>
-            <p className="text-xs text-slate-600 leading-relaxed">
-              Apakah Anda yakin ingin menghapus habit ini? Seluruh riwayat pencapaian habit ini juga akan dihapus.
-            </p>
-            <div className="flex items-center justify-end gap-2 pt-2">
-              <button
-                onClick={() => setConfirmDeleteId(null)}
-                className="px-3.5 py-1.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 transition-colors"
-              >
-                Batal
-              </button>
-              <button
-                onClick={() => {
-                  if (onDeleteHabit && confirmDeleteId) {
-                    onDeleteHabit(confirmDeleteId);
-                  }
-                  setConfirmDeleteId(null);
-                }}
-                className="px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-colors shadow-2xs"
-              >
-                Ya, Hapus
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Floating Action Button (FAB) */}
       <button

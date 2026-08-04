@@ -45,6 +45,26 @@ export default function App() {
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [habitToEdit, setHabitToEdit] = useState<Habit | null>(null);
 
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+
+  useEffect(() => {
+    const handleBeforeInstall = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handleBeforeInstall);
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
+  }, []);
+
+  const handleInstallPWA = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setDeferredPrompt(null);
+    }
+  };
+
   // Initialize background anonymous auth if available
   useEffect(() => {
     initAnonymousAuth();
@@ -177,11 +197,6 @@ export default function App() {
                 setHabitToEdit(null);
                 setIsFormModalOpen(true);
               }}
-              onEditHabit={(habit) => {
-                setHabitToEdit(habit);
-                setIsFormModalOpen(true);
-              }}
-              onDeleteHabit={handleDeleteHabit}
             />
           </>
         )}
@@ -214,6 +229,8 @@ export default function App() {
             habits={habits}
             logs={logs}
             onImportData={handleImportData}
+            deferredPrompt={deferredPrompt}
+            onInstallPWA={handleInstallPWA}
           />
         )}
       </main>

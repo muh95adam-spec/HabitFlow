@@ -26,6 +26,8 @@ interface SettingsTabProps {
   habits: Habit[];
   logs: HabitLog[];
   onImportData: (habits: Habit[], logs: HabitLog[]) => void;
+  deferredPrompt?: any;
+  onInstallPWA?: () => void;
 }
 
 export const SettingsTab: React.FC<SettingsTabProps> = ({
@@ -36,6 +38,8 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
   habits,
   logs,
   onImportData,
+  deferredPrompt,
+  onInstallPWA,
 }) => {
   const [nameInput, setNameInput] = useState(userName);
   const [isSavedAlert, setIsSavedAlert] = useState(false);
@@ -234,6 +238,40 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
         </div>
       </div>
 
+
+      {/* Install PWA Section */}
+      <div className="bg-gradient-to-br from-teal-800 to-teal-950 text-white rounded-2xl p-4 shadow-md space-y-3">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-teal-500/20 border border-teal-400/30 text-teal-300 flex items-center justify-center shrink-0">
+            <Smartphone className="w-5 h-5" />
+          </div>
+          <div>
+            <h3 className="text-sm font-extrabold text-white">Install Aplikasi HabitFlow</h3>
+            <p className="text-[11px] text-teal-200">Jadikan aplikasi standalone tanpa browser frame</p>
+          </div>
+        </div>
+
+        {deferredPrompt ? (
+          <button
+            onClick={onInstallPWA}
+            type="button"
+            className="w-full py-2.5 px-4 bg-teal-500 hover:bg-teal-400 text-slate-950 font-extrabold rounded-xl text-xs transition-all shadow-sm flex items-center justify-center gap-2"
+          >
+            <Download className="w-4 h-4" />
+            <span>Install Ke HP Sekarang (PWA)</span>
+          </button>
+        ) : (
+          <div className="p-3 bg-white/10 rounded-xl border border-white/10 text-xs text-teal-100 space-y-1.5">
+            <p className="font-semibold text-white">Cara Install sebagai Aplikasi Resmi (WebAPK):</p>
+            <ol className="list-decimal list-inside text-[11px] space-y-1 text-teal-200">
+              <li>Buka website ini di Google Chrome di HP Anda.</li>
+              <li>Ketuk menu titik tiga (<b>⋮</b>) di kanan atas Chrome.</li>
+              <li>Pilih menu <b>"Install aplikasi"</b> atau <b>"Tambahkan ke Layar Utama"</b>.</li>
+              <li>Pilih <b>"Install"</b> agar tidak muncul badge Chrome pada ikon.</li>
+            </ol>
+          </div>
+        )}
+      </div>
 
       {/* Pengingat (Reminder) */}
       <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs space-y-3">

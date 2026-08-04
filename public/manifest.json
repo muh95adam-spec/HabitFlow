@@ -1,6 +1,6 @@
 {
-  "id": "/?source=pwa",
-  "name": "HabitFlow",
+  "id": "habitflow-app-pwa",
+  "name": "HabitFlow - Habit Tracker",
   "short_name": "HabitFlow",
   "description": "Aplikasi habit tracker personal mobile-first",
   "start_url": "/",
@@ -36,3 +36,4 @@
     }
   ]
 }
+
