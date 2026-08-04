@@ -1,6 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { User, onAuthStateChanged } from 'firebase/auth';
-import { auth } from './lib/firebase';
 import { Habit, HabitLog } from './types';
 import { getTodayStr } from './lib/dateUtils';
 import {
@@ -17,8 +15,7 @@ import {
 import {
   getStoredUserName,
   setStoredUserName,
-  getStoredSyncCode,
-  setStoredSyncCode,
+  PERSONAL_USER_ID,
   initAnonymousAuth
 } from './lib/authService';
 
@@ -32,9 +29,7 @@ import { SettingsTab } from './components/SettingsTab';
 import { HabitFormModal } from './components/HabitFormModal';
 
 export default function App() {
-  const [user, setUser] = useState<User | null>(null);
   const [userName, setUserName] = useState<string>(getStoredUserName());
-  const [syncCode, setSyncCode] = useState<string>(getStoredSyncCode());
   const [activeTab, setActiveTab] = useState<TabType>('today');
   const [selectedDateStr, setSelectedDateStr] = useState<string>(getTodayStr());
 
@@ -65,60 +60,47 @@ export default function App() {
     }
   };
 
-  // Initialize background anonymous auth if available
+  // Silently initialize Firebase auth if enabled, or proceed directly
   useEffect(() => {
     initAnonymousAuth();
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-    });
-    return () => unsubscribe();
   }, []);
 
   const handleSaveUserName = (newName: string) => {
     setStoredUserName(newName);
     setUserName(newName);
-    saveUserProfileToDb(syncCode, newName);
+    saveUserProfileToDb(PERSONAL_USER_ID, newName);
   };
 
-  const handleSaveSyncCode = (newCode: string) => {
-    setStoredSyncCode(newCode);
-    setSyncCode(newCode);
-  };
-
-  // Real-time Firestore or Local Storage subscriptions using active Sync Code
+  // Real-time Firestore subscriptions using PERSONAL_USER_ID
   useEffect(() => {
     setIsLoading(true);
-    const activeUserId = syncCode;
 
-    const unsubHabits = subscribeHabits(activeUserId, (data) => {
+    const unsubHabits = subscribeHabits(PERSONAL_USER_ID, (data) => {
       setHabits(data);
       setIsLoading(false);
     });
 
-    const unsubLogs = subscribeLogs(activeUserId, (data) => {
+    const unsubLogs = subscribeLogs(PERSONAL_USER_ID, (data) => {
       setLogs(data);
     });
 
-    const unsubProfile = subscribeUserProfile(activeUserId, (remoteName) => {
-      setStoredUserName(remoteName);
-      setUserName(remoteName);
+    const unsubProfile = subscribeUserProfile(PERSONAL_USER_ID, (remoteName) => {
+      if (remoteName) {
+        setStoredUserName(remoteName);
+        setUserName(remoteName);
+      }
     });
-
-    // Ensure current local name is synced if remote doc doesn't override it
-    if (userName) {
-      saveUserProfileToDb(activeUserId, userName);
-    }
 
     return () => {
       unsubHabits();
       unsubLogs();
       unsubProfile();
     };
-  }, [syncCode]);
+  }, []);
 
   // Handle Habit Log update
   const handleUpdateLog = async (log: HabitLog) => {
-    const logToSave = { ...log, userId: syncCode };
+    const logToSave = { ...log, userId: PERSONAL_USER_ID };
     const updatedLogs = logs.filter((l) => l.id !== log.id);
     updatedLogs.push(logToSave);
     setLogs(updatedLogs);
@@ -127,7 +109,7 @@ export default function App() {
 
   // Handle Save (Add / Edit) Habit
   const handleSaveHabit = async (habit: Habit) => {
-    const habitToSave = { ...habit, userId: syncCode };
+    const habitToSave = { ...habit, userId: PERSONAL_USER_ID };
     const idx = habits.findIndex((h) => h.id === habit.id);
     let updated: Habit[];
     if (idx >= 0) {
@@ -144,7 +126,7 @@ export default function App() {
   const handleDeleteHabit = async (habitId: string) => {
     setHabits((prev) => prev.filter((h) => h.id !== habitId));
     setLogs((prev) => prev.filter((l) => l.habitId !== habitId));
-    await deleteHabitFromDb(habitId, syncCode);
+    await deleteHabitFromDb(habitId, PERSONAL_USER_ID);
   };
 
   // Handle Toggle Status (Active / Paused)
@@ -165,10 +147,10 @@ export default function App() {
     saveLocalLogs(importedLogs);
 
     for (const h of importedHabits) {
-      await saveHabitToDb({ ...h, userId: syncCode });
+      await saveHabitToDb({ ...h, userId: PERSONAL_USER_ID });
     }
     for (const l of importedLogs) {
-      await updateHabitLogToDb({ ...l, userId: syncCode });
+      await updateHabitLogToDb({ ...l, userId: PERSONAL_USER_ID });
     }
   };
 
@@ -223,9 +205,7 @@ export default function App() {
         {activeTab === 'settings' && (
           <SettingsTab
             userName={userName}
-            syncCode={syncCode}
             onSaveUserName={handleSaveUserName}
-            onSaveSyncCode={handleSaveSyncCode}
             habits={habits}
             logs={logs}
             onImportData={handleImportData}
@@ -239,7 +219,7 @@ export default function App() {
       {isFormModalOpen && (
         <HabitFormModal
           habitToEdit={habitToEdit}
-          userId={syncCode}
+          userId={PERSONAL_USER_ID}
           onClose={() => {
             setIsFormModalOpen(false);
             setHabitToEdit(null);

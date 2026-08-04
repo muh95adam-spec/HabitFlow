@@ -10,19 +10,13 @@ import {
   CheckCircle2,
   ShieldCheck,
   Save,
-  Copy,
-  Check,
-  RefreshCw,
-  Share2,
-  Laptop,
+  LogOut,
   Trash2
 } from 'lucide-react';
 
 interface SettingsTabProps {
   userName: string;
-  syncCode: string;
   onSaveUserName: (name: string) => void;
-  onSaveSyncCode: (code: string) => void;
   habits: Habit[];
   logs: HabitLog[];
   onImportData: (habits: Habit[], logs: HabitLog[]) => void;
@@ -32,9 +26,7 @@ interface SettingsTabProps {
 
 export const SettingsTab: React.FC<SettingsTabProps> = ({
   userName,
-  syncCode,
   onSaveUserName,
-  onSaveSyncCode,
   habits,
   logs,
   onImportData,
@@ -43,10 +35,6 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
 }) => {
   const [nameInput, setNameInput] = useState(userName);
   const [isSavedAlert, setIsSavedAlert] = useState(false);
-
-  const [codeInput, setCodeInput] = useState('');
-  const [copied, setCopied] = useState(false);
-  const [syncSuccess, setSyncSuccess] = useState(false);
 
   const [reminderEnabled, setReminderEnabled] = useState(true);
   const [reminderTime, setReminderTime] = useState('20:00');
@@ -58,35 +46,12 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
     setTimeout(() => setIsSavedAlert(false), 2000);
   };
 
-  const handleCopyCode = () => {
-    navigator.clipboard.writeText(syncCode);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  const handleConnectSyncCode = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!codeInput.trim()) return;
-    onSaveSyncCode(codeInput.trim());
-    setSyncSuccess(true);
-    setCodeInput('');
-    setTimeout(() => setSyncSuccess(false), 3000);
-  };
-
-  const handleGenerateNewCode = () => {
-    const randomCode = 'HF-' + Math.floor(100000 + Math.random() * 900000).toString();
-    onSaveSyncCode(randomCode);
-    setSyncSuccess(true);
-    setTimeout(() => setSyncSuccess(false), 3000);
-  };
-
   const handleExportJSON = () => {
     const data = {
       app: 'HabitFlow',
       version: '1.0.0',
       exportedAt: new Date().toISOString(),
-      user: userName || 'guest',
-      syncCode,
+      user: userName || 'Pengguna',
       habits,
       logs,
     };
@@ -159,82 +124,30 @@ export const SettingsTab: React.FC<SettingsTabProps> = ({
         </form>
       </div>
 
-      {/* Multi-Device Sync Section */}
+      {/* Database & Multi-Device Sync Section */}
       <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs space-y-3">
         <div className="flex items-center justify-between">
           <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
-            <Share2 className="w-3.5 h-3.5 text-teal-600" />
-            <span>Sinkronisasi Multi-Device (Tanpa Login)</span>
+            <ShieldCheck className="w-3.5 h-3.5 text-teal-600" />
+            <span>Koneksi Cloud Firestore (Personal)</span>
           </h3>
           <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
             Realtime Active
           </span>
         </div>
 
-        {/* Current Sync Code Display */}
-        <div className="p-3.5 bg-gradient-to-r from-teal-900 to-teal-800 text-white rounded-xl space-y-2 shadow-xs">
-          <div className="flex items-center justify-between text-xs text-teal-200 font-medium">
-            <span>Kode Sinkronisasi Perangkat Ini:</span>
-            <div className="flex items-center gap-1">
-              <Laptop className="w-3.5 h-3.5" />
-              <Smartphone className="w-3.5 h-3.5" />
-            </div>
+        <div className="p-3.5 bg-slate-50 border border-slate-200/70 rounded-xl space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-slate-500 font-medium">Pengguna:</span>
+            <span className="text-xs font-bold text-slate-800">Adam (Personal Mode)</span>
           </div>
-          <div className="flex items-center justify-between gap-2 bg-teal-950/60 px-3 py-2 rounded-lg border border-teal-700/50">
-            <span className="font-mono text-base tracking-wider font-extrabold text-teal-300">
-              {syncCode}
-            </span>
-            <button
-              onClick={handleCopyCode}
-              className="px-2.5 py-1 bg-teal-700 hover:bg-teal-600 active:scale-95 text-white rounded-md text-xs font-bold transition-all flex items-center gap-1 shrink-0"
-            >
-              {copied ? <Check className="w-3.5 h-3.5 text-emerald-300" /> : <Copy className="w-3.5 h-3.5" />}
-              <span>{copied ? 'Tersalin!' : 'Salin Kode'}</span>
-            </button>
+          <div className="flex items-center justify-between">
+            <span className="text-xs text-slate-500 font-medium">Status Database:</span>
+            <span className="text-xs font-bold text-emerald-600">Firebase Firestore Synchronized</span>
           </div>
-          <p className="text-[11px] text-teal-100/80 leading-snug">
-            Gunakan kode di atas pada HP atau Laptop Anda yang lain. Semua data habit akan tersinkronisasi secara otomatis & real-time tanpa perlu Login Google.
-          </p>
-        </div>
-
-        {/* Form Connect Code */}
-        <form onSubmit={handleConnectSyncCode} className="pt-1 space-y-2">
-          <label className="block text-xs font-bold text-slate-700">
-            Hubungkan ke Kode HP/Laptop Lain:
-          </label>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={codeInput}
-              onChange={(e) => setCodeInput(e.target.value.toUpperCase())}
-              placeholder="Contoh: HF-829102 atau KODE_KAMU"
-              className="flex-1 px-3 py-1.5 text-xs font-mono font-semibold rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500 uppercase"
-            />
-            <button
-              type="submit"
-              className="px-4 py-1.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold transition-colors shrink-0 flex items-center gap-1"
-            >
-              <RefreshCw className="w-3.5 h-3.5" />
-              <span>Hubungkan</span>
-            </button>
+          <div className="pt-2 border-t border-slate-200/60 text-[11px] text-slate-500 leading-relaxed">
+            Semua perangkat Anda (HP, Tablet, Laptop) otomatis terhubung dan tersinkronisasi ke database yang sama secara langsung tanpa memerlukan proses login.
           </div>
-        </form>
-
-        {syncSuccess && (
-          <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-xs font-bold flex items-center gap-2">
-            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-            <span>Berhasil terhubung ke Kode Sinkronisasi! Data telah diperbarui.</span>
-          </div>
-        )}
-
-        <div className="flex justify-end">
-          <button
-            onClick={handleGenerateNewCode}
-            type="button"
-            className="text-[11px] font-semibold text-slate-500 hover:text-teal-700 underline underline-offset-2 transition-colors"
-          >
-            Buat Kode Sinkronisasi Baru
-          </button>
         </div>
       </div>
 

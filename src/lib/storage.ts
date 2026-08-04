@@ -79,7 +79,7 @@ export function seedInitialHabits(userId: string): Habit[] {
 
 // Subscribe to habits real-time
 export function subscribeHabits(userId: string, callback: (habits: Habit[]) => void) {
-  if (!userId || userId === 'guest') {
+  if (!userId) {
     const habits = getLocalHabits();
     callback(habits);
     return () => {};
@@ -90,9 +90,19 @@ export function subscribeHabits(userId: string, callback: (habits: Habit[]) => v
     q,
     (snapshot) => {
       if (snapshot.empty) {
-        // Clean empty state for new or unsynced code
-        saveLocalHabits([]);
-        callback([]);
+        const local = getLocalHabits();
+        if (local.length > 0) {
+          // Sync existing local habits to Firestore
+          for (const h of local) {
+            saveHabitToDb({ ...h, userId });
+          }
+          callback(local);
+        } else {
+          // Auto-seed default habits directly to Firestore for Adam
+          seedUserHabitsToFirestore(userId).then(() => {
+            callback(getLocalHabits());
+          });
+        }
       } else {
         const habits: Habit[] = snapshot.docs.map((d) => d.data() as Habit);
         saveLocalHabits(habits);
@@ -100,8 +110,14 @@ export function subscribeHabits(userId: string, callback: (habits: Habit[]) => v
       }
     },
     (error) => {
-      console.warn('Firestore habits subscription error, fallback to local', error);
-      callback(getLocalHabits());
+      console.warn('Firestore habits subscription fallback to local', error);
+      const local = getLocalHabits();
+      if (local.length === 0) {
+        const seeded = seedInitialHabits(userId);
+        callback(seeded);
+      } else {
+        callback(local);
+      }
     }
   );
 }
@@ -156,27 +172,55 @@ export async function saveHabitToDb(habit: Habit) {
 }
 
 // Subscribe User Profile real-time
-export function subscribeUserProfile(syncCode: string, callback: (userName: string) => void) {
-  if (!syncCode) return () => {};
-  const docRef = doc(db, 'users', syncCode);
+export function subscribeUserProfile(userId: string, callback: (userName: string) => void) {
+  if (!userId || userId === 'guest') return () => {};
+  const docRef = doc(db, 'users', userId);
   return onSnapshot(docRef, (docSnap) => {
     if (docSnap.exists()) {
       const data = docSnap.data();
-      if (data && data.userName) {
-        callback(data.userName);
+      if (data && (data.userName || data.name)) {
+        callback(data.userName || data.name);
       }
     }
   });
 }
 
 // Save User Profile to Firestore
-export async function saveUserProfileToDb(syncCode: string, userName: string) {
-  if (!syncCode) return;
+export async function saveUserProfileToDb(userId: string, userName: string) {
+  if (!userId || userId === 'guest') return;
   try {
-    const docRef = doc(db, 'users', syncCode);
+    const docRef = doc(db, 'users', userId);
     await setDoc(docRef, { userName, updatedAt: new Date().toISOString() }, { merge: true });
   } catch (e) {
     console.error('Error saving user profile to Firestore', e);
+  }
+}
+
+// Seed Initial Habits for New User directly to Firestore
+export async function seedUserHabitsToFirestore(userId: string) {
+  if (!userId || userId === 'guest') return;
+  const now = new Date().toISOString();
+  try {
+    const batch = writeBatch(db);
+    const createdHabits: Habit[] = DEFAULT_HABITS.map((item, index) => {
+      const habitId = `habit_${Date.now()}_${index}_${Math.random().toString(36).substring(2, 6)}`;
+      const newHabit: Habit = {
+        ...item,
+        id: habitId,
+        userId,
+        createdAt: now,
+        updatedAt: now,
+        currentStreak: 0,
+        bestStreak: 0,
+      };
+      const docRef = doc(db, 'habits', habitId);
+      batch.set(docRef, newHabit);
+      return newHabit;
+    });
+    await batch.commit();
+    saveLocalHabits(createdHabits);
+  } catch (e) {
+    console.error('Error seeding user habits to Firestore', e);
   }
 }
 
