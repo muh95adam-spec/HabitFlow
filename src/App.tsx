@@ -12,6 +12,13 @@ import {
   saveLocalHabits,
   saveLocalLogs
 } from './lib/storage';
+import {
+  getStoredUserName,
+  setStoredUserName,
+  getStoredSyncCode,
+  setStoredSyncCode,
+  initAnonymousAuth
+} from './lib/authService';
 
 import { Header } from './components/Header';
 import { DateSelector } from './components/DateSelector';
@@ -24,6 +31,8 @@ import { HabitFormModal } from './components/HabitFormModal';
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
+  const [userName, setUserName] = useState<string>(getStoredUserName());
+  const [syncCode, setSyncCode] = useState<string>(getStoredSyncCode());
   const [activeTab, setActiveTab] = useState<TabType>('today');
   const [selectedDateStr, setSelectedDateStr] = useState<string>(getTodayStr());
 
@@ -33,23 +42,34 @@ export default function App() {
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [habitToEdit, setHabitToEdit] = useState<Habit | null>(null);
 
-  // Auth Listener
+  // Initialize background anonymous auth if available
   useEffect(() => {
+    initAnonymousAuth();
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
     });
     return () => unsubscribe();
   }, []);
 
-  // Real-time Firestore or Local Storage subscriptions
-  useEffect(() => {
-    const userId = user ? user.uid : 'guest';
+  const handleSaveUserName = (newName: string) => {
+    setStoredUserName(newName);
+    setUserName(newName);
+  };
 
-    const unsubHabits = subscribeHabits(userId, (data) => {
+  const handleSaveSyncCode = (newCode: string) => {
+    setStoredSyncCode(newCode);
+    setSyncCode(newCode);
+  };
+
+  // Real-time Firestore or Local Storage subscriptions using active Sync Code
+  useEffect(() => {
+    const activeUserId = syncCode;
+
+    const unsubHabits = subscribeHabits(activeUserId, (data) => {
       setHabits(data);
     });
 
-    const unsubLogs = subscribeLogs(userId, (data) => {
+    const unsubLogs = subscribeLogs(activeUserId, (data) => {
       setLogs(data);
     });
 
@@ -57,36 +77,37 @@ export default function App() {
       unsubHabits();
       unsubLogs();
     };
-  }, [user]);
+  }, [syncCode]);
 
   // Handle Habit Log update
   const handleUpdateLog = async (log: HabitLog) => {
+    const logToSave = { ...log, userId: syncCode };
     const updatedLogs = logs.filter((l) => l.id !== log.id);
-    updatedLogs.push(log);
+    updatedLogs.push(logToSave);
     setLogs(updatedLogs);
-    await updateHabitLogToDb(log);
+    await updateHabitLogToDb(logToSave);
   };
 
   // Handle Save (Add / Edit) Habit
   const handleSaveHabit = async (habit: Habit) => {
+    const habitToSave = { ...habit, userId: syncCode };
     const idx = habits.findIndex((h) => h.id === habit.id);
     let updated: Habit[];
     if (idx >= 0) {
       updated = [...habits];
-      updated[idx] = habit;
+      updated[idx] = habitToSave;
     } else {
-      updated = [...habits, habit];
+      updated = [...habits, habitToSave];
     }
     setHabits(updated);
-    await saveHabitToDb(habit);
+    await saveHabitToDb(habitToSave);
   };
 
   // Handle Delete Habit
   const handleDeleteHabit = async (habitId: string) => {
-    const userId = user ? user.uid : 'guest';
     setHabits((prev) => prev.filter((h) => h.id !== habitId));
     setLogs((prev) => prev.filter((l) => l.habitId !== habitId));
-    await deleteHabitFromDb(habitId, userId);
+    await deleteHabitFromDb(habitId, syncCode);
   };
 
   // Handle Toggle Status (Active / Paused)
@@ -101,17 +122,16 @@ export default function App() {
 
   // Handle Import JSON Data
   const handleImportData = async (importedHabits: Habit[], importedLogs: HabitLog[]) => {
-    const userId = user ? user.uid : 'guest';
     setHabits(importedHabits);
     setLogs(importedLogs);
     saveLocalHabits(importedHabits);
     saveLocalLogs(importedLogs);
 
     for (const h of importedHabits) {
-      await saveHabitToDb({ ...h, userId });
+      await saveHabitToDb({ ...h, userId: syncCode });
     }
     for (const l of importedLogs) {
-      await updateHabitLogToDb({ ...l, userId });
+      await updateHabitLogToDb({ ...l, userId: syncCode });
     }
   };
 
@@ -122,7 +142,7 @@ export default function App() {
 
       {/* Main Content Area */}
       <main className="flex-1 min-w-0 flex flex-col min-h-screen">
-        <Header user={user} onOpenProfile={() => setActiveTab('settings')} />
+        <Header userName={userName} onOpenProfile={() => setActiveTab('settings')} />
 
         {activeTab === 'today' && (
           <>
@@ -168,7 +188,10 @@ export default function App() {
 
         {activeTab === 'settings' && (
           <SettingsTab
-            user={user}
+            userName={userName}
+            syncCode={syncCode}
+            onSaveUserName={handleSaveUserName}
+            onSaveSyncCode={handleSaveSyncCode}
             habits={habits}
             logs={logs}
             onImportData={handleImportData}
@@ -180,7 +203,7 @@ export default function App() {
       {isFormModalOpen && (
         <HabitFormModal
           habitToEdit={habitToEdit}
-          userId={user ? user.uid : 'guest'}
+          userId={syncCode}
           onClose={() => {
             setIsFormModalOpen(false);
             setHabitToEdit(null);
@@ -191,3 +214,5 @@ export default function App() {
     </div>
   );
 }
+
+

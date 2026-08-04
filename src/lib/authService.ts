@@ -1,27 +1,56 @@
-import { auth, googleProvider, signInWithPopup, signOut } from './firebase';
+import { auth, signInAnonymously } from './firebase';
 
-export async function signInWithGoogle() {
+const LOCAL_USER_NAME_KEY = 'habitflow_user_name';
+const SYNC_CODE_KEY = 'habitflow_sync_code';
+
+export function getStoredUserName(): string {
   try {
-    const result = await signInWithPopup(auth, googleProvider);
-    return result.user;
-  } catch (error: any) {
-    if (
-      error?.code === 'auth/popup-closed-by-user' ||
-      error?.code === 'auth/cancelled-popup-request'
-    ) {
-      console.log('User closed Google sign-in popup');
-      return null;
+    return localStorage.getItem(LOCAL_USER_NAME_KEY) || 'Sahabat';
+  } catch {
+    return 'Sahabat';
+  }
+}
+
+export function setStoredUserName(name: string): void {
+  try {
+    localStorage.setItem(LOCAL_USER_NAME_KEY, name.trim() || 'Sahabat');
+  } catch (e) {
+    console.error('Failed to save user name', e);
+  }
+}
+
+export function getStoredSyncCode(): string {
+  try {
+    let code = localStorage.getItem(SYNC_CODE_KEY);
+    if (!code) {
+      code = 'HF-' + Math.floor(100000 + Math.random() * 900000).toString();
+      localStorage.setItem(SYNC_CODE_KEY, code);
     }
-    console.error('Error signing in with Google:', error);
-    alert('Gagal masuk dengan Google: ' + (error?.message || 'Terjadi kesalahan'));
-    return null;
+    return code;
+  } catch {
+    return 'HF-123456';
   }
 }
 
-export async function logoutUser() {
+export function setStoredSyncCode(code: string): void {
   try {
-    await signOut(auth);
-  } catch (error) {
-    console.error('Error signing out:', error);
+    const clean = code.trim().toUpperCase().replace(/[^A-Z0-9-]/g, '');
+    if (clean) {
+      localStorage.setItem(SYNC_CODE_KEY, clean);
+    }
+  } catch (e) {
+    console.error('Failed to save sync code', e);
   }
 }
+
+export async function initAnonymousAuth() {
+  try {
+    if (auth && !auth.currentUser) {
+      await signInAnonymously(auth);
+    }
+  } catch (e) {
+    console.log('Using local device storage mode');
+  }
+}
+
+

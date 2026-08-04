@@ -93,26 +93,38 @@ export function subscribeHabits(userId: string, callback: (habits: Habit[]) => v
     q,
     async (snapshot) => {
       if (snapshot.empty) {
-        // Seed default habits in Firestore for new user
+        // Seed or upload existing local habits to Firestore for this sync code
+        const local = getLocalHabits();
         const batch = writeBatch(db);
         const now = new Date().toISOString();
-        const seeded: Habit[] = DEFAULT_HABITS.map((item, index) => {
-          const docRef = doc(collection(db, 'habits'));
-          const habitData: Habit = {
+
+        let habitsToSave: Habit[];
+        if (local.length > 0) {
+          habitsToSave = local.map((h) => ({
+            ...h,
+            userId,
+            updatedAt: now,
+          }));
+        } else {
+          habitsToSave = DEFAULT_HABITS.map((item, index) => ({
             ...item,
-            id: docRef.id,
+            id: `habit_${Date.now()}_${index}`,
             userId,
             createdAt: now,
             updatedAt: now,
             currentStreak: 0,
             bestStreak: 0,
-          };
-          batch.set(docRef, habitData);
-          return habitData;
+          }));
+        }
+
+        habitsToSave.forEach((habit) => {
+          const docRef = doc(db, 'habits', habit.id);
+          batch.set(docRef, habit, { merge: true });
         });
+
         await batch.commit();
-        saveLocalHabits(seeded);
-        callback(seeded);
+        saveLocalHabits(habitsToSave);
+        callback(habitsToSave);
       } else {
         const habits: Habit[] = snapshot.docs.map((d) => d.data() as Habit);
         saveLocalHabits(habits);
@@ -125,6 +137,7 @@ export function subscribeHabits(userId: string, callback: (habits: Habit[]) => v
     }
   );
 }
+
 
 // Subscribe to logs real-time
 export function subscribeLogs(userId: string, callback: (logs: HabitLog[]) => void) {
